@@ -30,18 +30,25 @@ def run_sdr(device, rate, center_freq, gain):
     socket = context.socket(zmq.PAIR)
     socket.bind("tcp://{}:{}".format(TCP_IP, TCP_PORT))
 
+    SENT = 0
     try:
         while True:
+            try:
+                resp = socket.recv(flags=zmq.NOBLOCK)
+                print(resp)
+                break
+            except zmq.Again as e:
+                pass
             sr = sdr.readStream(rx_stream, [recv_buffer], len(recv_buffer))
             # samples[i * NUM_RECV_FRAMES : (i + 1) * NUM_RECV_FRAMES] = recv_buffer
             samples = recv_buffer
             socket.send(samples)
-            print(samples[0])
-            time.sleep(1)
+            SENT += 1
     except KeyboardInterrupt:
         print('Breaking out of loop')
 
     print('Done streaming')
+    print('SENT ', SENT)
     sdr.deactivateStream(rx_stream)
     sdr.closeStream(rx_stream)
     print("Cleaned device")
